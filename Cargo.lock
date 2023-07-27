@@ -941,7 +941,7 @@ dependencies = [
 [[package]]
 name = "cairo-felt"
 version = "0.6.0"
-source = "git+https://github.com/keep-starknet-strange/cairo-rs?branch=no_std-support-with-cairo-1#3f406f4a335fd3a0bf22237e493be5a9947efa7d"
+source = "git+https://github.com/keep-starknet-strange/cairo-rs?branch=no_std-support-with-cairo-1#754c1bb974995471bd410f04ded2a90021ca32fd"
 dependencies = [
  "lazy_static",
  "num-bigint",
@@ -9789,7 +9789,7 @@ dependencies = [
 [[package]]
 name = "starknet_api"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/starknet-api?branch=no_std-support#6a48e7c8636685b80515c6ab666c1ae9d01278a2"
+source = "git+https://github.com/keep-starknet-strange/starknet-api?branch=no_std-support#dd68b2a8e9f97818f0618a2f459351f26f594630"
 dependencies = [
  "cairo-lang-casm-contract-class",
  "derive_more",
@@ -10803,7 +10803,7 @@ checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
  "digest 0.10.7",
- "rand 0.8.5",
+ "rand 0.7.3",
  "static_assertions",
 ]
 
