@@ -112,7 +112,7 @@ the `crates/node/src/chain_spec.rs` file.
 let test_contract_class = get_contract_class(&read_file_to_string("../../cairo-contracts/build/tick.json"), 0);
 ```
 
-In the `crates/node/src/constants.rs` we added constant values forr the contract
+In the `crates/node/src/constants.rs` we added constant values for the contract
 address and the contract class hash.
 
 ```rust
