@@ -112,7 +112,7 @@ the `crates/node/src/chain_spec.rs` file.
 let test_contract_class = get_contract_class(&read_file_to_string("../../cairo-contracts/build/tick.json"), 0);
 ```
 
-In the `crates/node/src/constants.rs` we added constant values forr the contract
+In the `crates/node/src/constants.rs` we added constant values for the contract
 address and the contract class hash.
 
 ```rust
@@ -197,23 +197,23 @@ order to ensure the sender account exists on Madara.
  fn invoke_tick() -> Result<(), DispatchError> {
         let tick_invoke_tx = Self::set_tick_tx();
 
-        ensure!(ContractClassHashes::<T>::contains_key(tick_invoke_tx.sender_address), Error::<T>::AccountNotDeployed);
+    ensure!(ContractClassHashes::<T>::contains_key(tick_invoke_tx.sender_address), Error::<T>::AccountNotDeployed);
 
-        let (transaction, receipt) = match Self::execute_tx(tick_invoke_tx) {
-            Ok((transaction, receipt)) => {
-                log!(info, "Successfully execute tick tx");
-                (transaction, receipt)
-            },
-            Err(err) => {
-                log!(error, "Failed to execute tick tx {:?}", err);
-                return Err(Error::<T>::TransactionExecutionFailed.into());
-            }
-        };
+    let (transaction, receipt) = match Self::execute_tx(tick_invoke_tx) {
+        Ok((transaction, receipt)) => {
+            log!(info, "Successfully execute tick tx");
+            (transaction, receipt)
+        },
+        Err(err) => {
+            log!(error, "Failed to execute tick tx {:?}", err);
+            return Err(Error::<T>::TransactionExecutionFailed.into());
+        }
+    };
 
-        Pending::<T>::try_append((transaction, receipt)).map_err(|_| Error::<T>::TooManyPendingTransactions)?;
+    Pending::<T>::try_append((transaction, receipt)).map_err(|_| Error::<T>::TooManyPendingTransactions)?;
 
-        Ok(())
-    }
+    Ok(())
+}
 ```
 
 The `set_tick_tx` function creates and returns the `InvokeTransaction` struct by
@@ -228,23 +228,23 @@ vector.
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
 
-        let sender_address = Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap();
-        let nonce = contract_nonce;
-        let mut calldata = Vec::new();
-        calldata.push(Felt252Wrapper::from_hex_be(constants::TEST_CONTRACT_ADDRESS).unwrap());
-        calldata.push(Felt252Wrapper::from_hex_be(constants::TEST_TICK_SELECTOR).unwrap());
-        calldata.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
+    let sender_address = Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap();
+    let nonce = contract_nonce;
+    let mut calldata = Vec::new();
+    calldata.push(Felt252Wrapper::from_hex_be(constants::TEST_CONTRACT_ADDRESS).unwrap());
+    calldata.push(Felt252Wrapper::from_hex_be(constants::TEST_TICK_SELECTOR).unwrap());
+    calldata.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
 
-        InvokeTransaction {
-            version: 1,
-            sender_address,
-            calldata: BoundedVec::try_from(calldata).unwrap_or_default(),
-            nonce,
-            signature: BoundedVec::try_from(signature).unwrap_or_default(),
-            max_fee: Felt252Wrapper::from(u128::MAX),
-            is_query: false,
-        }
+    InvokeTransaction {
+        version: 1,
+        sender_address,
+        calldata: BoundedVec::try_from(calldata).unwrap_or_default(),
+        nonce,
+        signature: BoundedVec::try_from(signature).unwrap_or_default(),
+        max_fee: Felt252Wrapper::from(u128::MAX),
+        is_query: false,
     }
+}
 ```
 
 The code in the `execute_tx` performs smart contract function invokations on
@@ -252,39 +252,39 @@ Starknet. This logic used to be in the `init` function, but this separation is
 what allows us to call `tick` on each new block.
 
 ```rust
-    fn execute_tx(invoke_transaction: InvokeTransaction) -> Result<(Transaction, TransactionReceiptWrapper), DispatchError> {
-        let block_context = Self::get_block_context();
-        let chain_id = Self::chain_id();
-        let transaction: Transaction = invoke_transaction.from_invoke(chain_id);
-        let call_info =
-            transaction.execute(&mut BlockifierStateAdapter::<T>::default(), &block_context, TxType::Invoke, None);
-        let receipt = match call_info {
-            Ok(TransactionExecutionInfoWrapper {
-                validate_call_info: _validate_call_info,
-                execute_call_info,
-                fee_transfer_call_info,
-                actual_fee,
-                actual_resources: _actual_resources,
-            }) => {
-                log!(info, "Invoke Tick Transaction executed successfully: {:?}", execute_call_info);
+fn execute_tx(invoke_transaction: InvokeTransaction) -> Result<(Transaction, TransactionReceiptWrapper), DispatchError> {
+    let block_context = Self::get_block_context();
+    let chain_id = Self::chain_id();
+    let transaction: Transaction = invoke_transaction.from_invoke(chain_id);
+    let call_info =
+        transaction.execute(&mut BlockifierStateAdapter::<T>::default(), &block_context, TxType::Invoke, None);
+    let receipt = match call_info {
+        Ok(TransactionExecutionInfoWrapper {
+            validate_call_info: _validate_call_info,
+            execute_call_info,
+            fee_transfer_call_info,
+            actual_fee,
+            actual_resources: _actual_resources,
+        }) => {
+            log!(info, "Invoke Tick Transaction executed successfully: {:?}", execute_call_info);
 
-                let events = Self::emit_events_for_calls(execute_call_info, fee_transfer_call_info)?;
+            let events = Self::emit_events_for_calls(execute_call_info, fee_transfer_call_info)?;
 
-                TransactionReceiptWrapper {
-                    events: BoundedVec::try_from(events).map_err(|_| Error::<T>::ReachedBoundedVecLimit)?,
-                    transaction_hash: transaction.hash,
-                    tx_type: TxType::Invoke,
-                    actual_fee: actual_fee.0.into(),
-                }
+            TransactionReceiptWrapper {
+                events: BoundedVec::try_from(events).map_err(|_| Error::<T>::ReachedBoundedVecLimit)?,
+                transaction_hash: transaction.hash,
+                tx_type: TxType::Invoke,
+                actual_fee: actual_fee.0.into(),
             }
-            Err(e) => {
-                log!(error, "Invoke Transaction execution failed: {:?}", e);
-                return Err(Error::<T>::TransactionExecutionFailed.into());
-            }
-        };
+        }
+        Err(e) => {
+            log!(error, "Invoke Transaction execution failed: {:?}", e);
+            return Err(Error::<T>::TransactionExecutionFailed.into());
+        }
+    };
 
-        Ok((transaction, receipt))
-    }
+    Ok((transaction, receipt))
+}
 ```
 
 ## Running Ticking Madara
