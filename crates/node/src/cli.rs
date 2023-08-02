@@ -30,6 +30,10 @@ pub struct Cli {
     /// Choose sealing method.
     #[arg(long, value_enum, ignore_case = true)]
     pub sealing: Option<Sealing>,
+
+    /// Set if you want to have ticking
+    #[arg(short, long, default_value_t = false)]
+    pub tick: bool
 }
 
 #[derive(Debug, clap::Args)]

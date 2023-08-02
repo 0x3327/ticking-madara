@@ -46,12 +46,15 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+        let enable_tick = self.tick;
         Ok(match id {
             "dev" => {
                 let enable_manual_seal = self.sealing.map(|_| true);
-                Box::new(chain_spec::development_config(enable_manual_seal)?)
+                Box::new(chain_spec::development_config(enable_manual_seal, enable_tick)?)
             }
-            "" | "local" | "madara-local" => Box::new(chain_spec::local_testnet_config()?),
+            "" | "local" | "madara-local" => {
+                Box::new(chain_spec::local_testnet_config(enable_tick)?)
+            },
             path => Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?),
         })
     }

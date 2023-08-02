@@ -58,7 +58,7 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
     (get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
 }
 
-pub fn development_config(enable_manual_seal: Option<bool>) -> Result<DevChainSpec, String> {
+pub fn development_config(enable_manual_seal: Option<bool>, enable_tick: bool) -> Result<DevChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
     Ok(DevChainSpec::from_genesis(
@@ -74,6 +74,7 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> Result<DevChainSp
                     // Initial PoA authorities
                     vec![authority_keys_from_seed("Alice")],
                     true,
+                    enable_tick
                 ),
                 enable_manual_seal,
             }
@@ -92,7 +93,7 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> Result<DevChainSp
     ))
 }
 
-pub fn local_testnet_config() -> Result<ChainSpec, String> {
+pub fn local_testnet_config(enable_tick: bool) -> Result<ChainSpec, String> {
     let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
     Ok(ChainSpec::from_genesis(
@@ -108,6 +109,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 // Intended to be only 2
                 vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
                 true,
+                enable_tick
             )
         },
         // Bootnodes
@@ -155,6 +157,7 @@ fn testnet_genesis(
     wasm_binary: &[u8],
     initial_authorities: Vec<(AuraId, GrandpaId)>,
     _enable_println: bool,
+    enable_tick: bool
 ) -> GenesisConfig {
     // ACCOUNT CONTRACT
     let no_validate_account_class =
@@ -201,12 +204,6 @@ fn testnet_genesis(
     let test_contract_class_hash = Felt252Wrapper::from_hex_be(TEST_CONTRACT_CLASS_HASH).unwrap();
     let test_contract_address = Felt252Wrapper::from_hex_be(TEST_CONTRACT_ADDRESS).unwrap();
 
-    // GAME CONTRACT
-    let game_contract_class =
-        get_contract_class(&read_file_to_string("../../cairo-contracts/build/game_compiled.json"), 0);
-    let game_contract_class_hash = Felt252Wrapper::from_hex_be(GAME_CONTRACT_CLASS_HASH).unwrap();
-    let game_contract_address = Felt252Wrapper::from_hex_be(GAME_CONTRACT_ADDRESS).unwrap();
-
     // Fee token
     let fee_token_address = Felt252Wrapper::from_hex_be(FEE_TOKEN_ADDRESS).unwrap();
     let fee_token_class_hash = Felt252Wrapper::from_hex_be(FEE_TOKEN_CLASS_HASH).unwrap();
@@ -228,6 +225,38 @@ fn testnet_genesis(
 
     let public_key = Felt252Wrapper::from_hex_be(PUBLIC_KEY).unwrap();
     let chain_id = Felt252Wrapper(FieldElement::from_byte_slice_be(&CHAIN_ID_STARKNET_TESTNET.to_be_bytes()).unwrap());
+    
+    let mut contracts = vec![
+        (no_validate_account_address, no_validate_account_class_hash),
+        (cairo_1_no_validate_account_address, cairo_1_no_validate_account_class_hash),
+        (token_contract_address, token_class_hash),
+        (nft_contract_address, nft_class_hash),
+        (fee_token_address, fee_token_class_hash),
+        (argent_account_address, argent_account_class_hash),
+        (oz_account_address, oz_account_class_hash),
+        (udc_contract_address, udc_class_hash), 
+    ];
+
+    let mut contract_classes = vec![
+        (no_validate_account_class_hash, no_validate_account_class),
+        (cairo_1_no_validate_account_class_hash, cairo_1_no_validate_account_class),
+        (argent_account_class_hash, argent_account_class),
+        (oz_account_class_hash, oz_account_class),
+        (argent_proxy_class_hash, argent_proxy_class),
+        (token_class_hash, erc20_class.clone()),
+        (fee_token_class_hash, erc20_class),
+        (nft_class_hash, erc721_class),
+        (udc_class_hash, udc_class),
+        (braavos_account_class_hash, braavos_account_class),
+        (braavos_account_base_impl_class_hash, braavos_account_base_impl_class),
+        (braavos_call_aggregator_class_hash, braavos_call_aggregator_class),
+        (braavos_proxy_class_hash, braavos_proxy_class),
+    ];
+
+    if enable_tick {    
+        contracts.push((test_contract_address, test_contract_class_hash));
+        contract_classes.push((test_contract_class_hash, test_contract_class));
+    };
 
     GenesisConfig {
         system: SystemConfig {
@@ -240,35 +269,8 @@ fn testnet_genesis(
         grandpa: GrandpaConfig { authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect() },
         /// Starknet Genesis configuration.
         starknet: madara_runtime::pallet_starknet::GenesisConfig {
-            contracts: vec![
-                (no_validate_account_address, no_validate_account_class_hash),
-                (cairo_1_no_validate_account_address, cairo_1_no_validate_account_class_hash),
-                (test_contract_address, test_contract_class_hash),
-                (token_contract_address, token_class_hash),
-                (nft_contract_address, nft_class_hash),
-                (fee_token_address, fee_token_class_hash),
-                (argent_account_address, argent_account_class_hash),
-                (oz_account_address, oz_account_class_hash),
-                (udc_contract_address, udc_class_hash),
-                (game_contract_address, game_contract_class_hash),
-            ],
-            contract_classes: vec![
-                (no_validate_account_class_hash, no_validate_account_class),
-                (cairo_1_no_validate_account_class_hash, cairo_1_no_validate_account_class),
-                (argent_account_class_hash, argent_account_class),
-                (oz_account_class_hash, oz_account_class),
-                (argent_proxy_class_hash, argent_proxy_class),
-                (test_contract_class_hash, test_contract_class),
-                (token_class_hash, erc20_class.clone()),
-                (fee_token_class_hash, erc20_class),
-                (nft_class_hash, erc721_class),
-                (udc_class_hash, udc_class),
-                (braavos_account_class_hash, braavos_account_class),
-                (braavos_account_base_impl_class_hash, braavos_account_base_impl_class),
-                (braavos_call_aggregator_class_hash, braavos_call_aggregator_class),
-                (braavos_proxy_class_hash, braavos_proxy_class),
-                (game_contract_class_hash, game_contract_class),
-            ],
+            contracts,
+            contract_classes,
             storage: vec![
                 (
                     get_storage_key(&fee_token_address, "ERC20_balances", &[no_validate_account_address], 0),
@@ -327,6 +329,7 @@ fn testnet_genesis(
             _phantom: Default::default(),
             chain_id,
             seq_addr_updated: true,
+            enable_tick
         },
     }
 }
