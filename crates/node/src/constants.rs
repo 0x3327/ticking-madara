@@ -19,8 +19,6 @@ pub const FEE_TOKEN_CLASS_HASH: &str = "0x20000";
 // pub const TEST_CONTRACT_CLASS_HASH: &str = "0x1000";
 pub const TEST_CONTRACT_ADDRESS: &str = "0x1111";
 pub const TEST_CONTRACT_CLASS_HASH: &str = "0x0000d08ad5cd621607f319e1f460d63268a9efb087c47b8066e6f82f2acc1e36";
-pub const GAME_CONTRACT_ADDRESS: &str = "0x1112";
-pub const GAME_CONTRACT_CLASS_HASH: &str = "0x007f89dbe061260fba1479ea576f3974be5afa27f9161e8bfcda05add6b1d53c";
 
 pub const ERC20_ADDRESS: &str = "0x040e59c2c182a58fb0a74349bfa4769cbbcba32547591dd3fb1def8623997d00";
 pub const ERC20_CLASS_HASH: &str = "0x10000";

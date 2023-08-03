@@ -185,11 +185,13 @@ pub mod pallet {
 
         /// The block is being initialized. Implement to have something happen.
         fn on_initialize(_: T::BlockNumber) -> Weight {
-            match Self::invoke_tick() {
-                Ok(_) => log!(info, "Successfully invoke tick and intialize block"),
-                Err(err) => match err {
-                    _ => log!(error, "Failed to invoke tick {:?}", err),
-                } 
+            if Self::enable_tick() { 
+                match Self::invoke_tick() {
+                    Ok(_) => log!(info, "Successfully invoke tick and intialize block"),
+                    Err(err) => match err {
+                        _ => log!(error, "Failed to invoke tick {:?}", err),
+                    } 
+                }
             }
             Weight::zero()
         }
@@ -335,6 +337,11 @@ pub mod pallet {
     #[pallet::getter(fn seq_addr_update)]
     pub type SeqAddrUpdate<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+    /// The tick is enabled.
+    #[pallet::storage]
+    #[pallet::getter(fn enable_tick)]
+    pub(super) type EnableTick<T: Config> = StorageValue<_, bool, ValueQuery>;
+
     /// Starknet genesis configuration.
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
@@ -358,6 +365,7 @@ pub mod pallet {
         /// The chain id.
         pub chain_id: Felt252Wrapper,
         pub seq_addr_updated: bool,
+        pub enable_tick: bool,
     }
 
     /// `Default` impl required by `pallet::GenesisBuild`.
@@ -371,6 +379,7 @@ pub mod pallet {
                 _phantom: PhantomData,
                 chain_id: Default::default(),
                 seq_addr_updated: true,
+                enable_tick: false,
             }
         }
     }
@@ -427,6 +436,7 @@ pub mod pallet {
             // Set the chain id from the genesis config.
             ChainId::<T>::put(self.chain_id);
             SeqAddrUpdate::<T>::put(self.seq_addr_updated);
+            EnableTick::<T>::put(self.enable_tick);
         }
     }
 
@@ -1096,7 +1106,6 @@ impl<T: Config> Pallet<T> {
     }
 
     fn invoke_tick() -> Result<(), DispatchError> {
-        log!(info, "INVOKE TICK");
         let tick_invoke_tx = Self::set_tick_tx();
         
         ensure!(ContractClassHashes::<T>::contains_key(tick_invoke_tx.sender_address), Error::<T>::AccountNotDeployed);
@@ -1121,8 +1130,7 @@ impl<T: Config> Pallet<T> {
 
     fn set_tick_tx() -> InvokeTransaction {
         let contract_nonce = Self::nonce(Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap());
-        log!(info,"CURRECT NONCE TICK {:?}", contract_nonce);
-
+        
         let mut signature = Vec::new();
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());

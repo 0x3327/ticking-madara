@@ -172,15 +172,17 @@ pub fn invoke(origin: OriginFor<T>, transaction: InvokeTransaction) -> DispatchR
 ```
 
 We have also modified Starknet hook `on_initialize`. This function is invoked
-each time a new block is being created, and we have added separate logs to
+before any extrinsic in a block, and we have added separate logs to
 display the successful invokation of the `invoke_tick` function.
 
 ```rust
 fn on_initialize(_: T::BlockNumber) -> Weight {
-    match Self::invoke_tick() {
-        Ok(_) => log!(info, "Successfully invoke tick and intialize block"),
-        Err(err) => match err {
-            _ => log!(error, "Failed to invoke tick {:?}", err),
+    if Self::enable_tick() { 
+        match Self::invoke_tick() {
+            Ok(_) => log!(info, "Successfully invoke tick and intialize block"),
+            Err(err) => match err {
+                _ => log!(error, "Failed to invoke tick {:?}", err),
+            } 
         }
     }
     Weight::zero()
@@ -192,9 +194,8 @@ tx struct is created in the `set_tick_tx` function, then checks are performed in
 order to ensure the sender account exists on Madara.
 
 ```rust
-fn invoke_tick() -> Result<(), DispatchError> {
-    log!(info, "INVOKE TICK");
-    let tick_invoke_tx = Self::set_tick_tx();
+ fn invoke_tick() -> Result<(), DispatchError> {
+        let tick_invoke_tx = Self::set_tick_tx();
 
     ensure!(ContractClassHashes::<T>::contains_key(tick_invoke_tx.sender_address), Error::<T>::AccountNotDeployed);
 
@@ -220,13 +221,12 @@ signing it and adding the `tick` smart contract invocation to the calldata
 vector.
 
 ```rust
-fn set_tick_tx() -> InvokeTransaction {
-    let contract_nonce = Self::nonce(Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap());
-    log!(info,"CURRECT NONCE TICK {:?}", contract_nonce);
-
-    let mut signature = Vec::new();
-    signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
-    signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
+    fn set_tick_tx() -> InvokeTransaction {
+        let contract_nonce = Self::nonce(Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap());
+        
+        let mut signature = Vec::new();
+        signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
+        signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
 
     let sender_address = Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap();
     let nonce = contract_nonce;
@@ -299,10 +299,10 @@ docker run fixmvp/ticking-madara
 
 If you'd like to play around with the sequencer yourself, you can clone our
 [GitHub repository](https://github.com/MVPWorkshop/madara "Ticking Madara GitHub repository").
-The command to run the sequencer from the source code is
+The command to run the sequencer from the source code is:
 
 ```bash
-cargo run --release - --dev --tmp --rpc-external --execution native --pool-limit=100000 --pool-kbytes=500000 --rpc-methods=unsafe --rpc-cors=all --in-peers=0 --out-peers=1 --no-telemetry
+cargo run --release - --dev --tmp --rpc-external --execution native --pool-limit=100000 --pool-kbytes=500000 --rpc-methods=unsafe --rpc-cors=all --in-peers=0 --out-peers=1 --no-telemetry --tick
 ```
 
 Just make sure you have
