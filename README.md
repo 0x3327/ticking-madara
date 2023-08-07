@@ -172,17 +172,17 @@ pub fn invoke(origin: OriginFor<T>, transaction: InvokeTransaction) -> DispatchR
 ```
 
 We have also modified Starknet hook `on_initialize`. This function is invoked
-before any extrinsic in a block, and we have added separate logs to
-display the successful invokation of the `invoke_tick` function.
+before any extrinsic in a block, and we have added separate logs to display the
+successful invokation of the `invoke_tick` function.
 
 ```rust
 fn on_initialize(_: T::BlockNumber) -> Weight {
-    if Self::enable_tick() { 
+    if Self::enable_tick() {
         match Self::invoke_tick() {
             Ok(_) => log!(info, "Successfully invoke tick and intialize block"),
             Err(err) => match err {
                 _ => log!(error, "Failed to invoke tick {:?}", err),
-            } 
+            }
         }
     }
     Weight::zero()
@@ -223,7 +223,7 @@ vector.
 ```rust
     fn set_tick_tx() -> InvokeTransaction {
         let contract_nonce = Self::nonce(Felt252Wrapper::from_hex_be(constants::TEST_SENDER_ADDRESS).unwrap());
-        
+
         let mut signature = Vec::new();
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
         signature.push(Felt252Wrapper::from_hex_be("0x0").unwrap());
@@ -291,10 +291,17 @@ fn execute_tx(invoke_transaction: InvokeTransaction) -> Result<(Transaction, Tra
 
 Ticking Madara is available via
 [Docker image on Docker hub](https://hub.docker.com/r/fixmvp/ticking-madara "Ticking Madara Docker image").
-To pull and run the image, simply run the following command:
+To pull and run the image without ticking functionality, simply run the
+following command:
 
 ```bash
 docker run fixmvp/ticking-madara
+```
+
+To enable tick, add the `--tick` flag to the same command:
+
+```bash
+docker run fixmvp/ticking-madara --tick
 ```
 
 If you'd like to play around with the sequencer yourself, you can clone our
