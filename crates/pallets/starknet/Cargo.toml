@@ -54,7 +54,7 @@ serde_json = { workspace = true }
 [dev-dependencies]
 pallet-timestamp = { workspace = true }
 pretty_assertions = { workspace = true }
-test-case = "3.1.0"
+test-case = "3.3.1"
 lazy_static = "1.4.0"
 hexlit = "0.5.5"
 starknet-core = { workspace = true, default-features = false }
